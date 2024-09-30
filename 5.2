@@ -1,58 +1,56 @@
+import tkinter as tk
 import RPi.GPIO as GPIO
-from tkinter import Tk, Radiobutton, Button, IntVar
 
-# GPIO setup
+# GPIO setup using BCM numbering
 GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
 
 # Define GPIO pins for the LEDs
-RED_LED = 17
-GREEN_LED = 27
-BLUE_LED = 22
+RED_LED_PIN = 18
+YELLOW_LED_PIN = 23
+BLUE_LED_PIN = 24
 
-# Set up GPIO pins as output
-GPIO.setup(RED_LED, GPIO.OUT)
-GPIO.setup(GREEN_LED, GPIO.OUT)
-GPIO.setup(BLUE_LED, GPIO.OUT)
+# Set the GPIO pins as outputs
+GPIO.setup(RED_LED_PIN, GPIO.OUT)
+GPIO.setup(YELLOW_LED_PIN, GPIO.OUT)
+GPIO.setup(BLUE_LED_PIN, GPIO.OUT)
 
-# Function to turn off all LEDs
-def turn_off_all_leds():
-    GPIO.output(RED_LED, GPIO.LOW)
-    GPIO.output(GREEN_LED, GPIO.LOW)
-    GPIO.output(BLUE_LED, GPIO.LOW)
+# Setup PWM for LEDs (1000 Hz)
+red_pwm = GPIO.PWM(RED_LED_PIN, 1000)
+yellow_pwm = GPIO.PWM(YELLOW_LED_PIN, 1000)
+blue_pwm = GPIO.PWM(BLUE_LED_PIN, 1000)
 
-# Function to control LEDs based on the selected radio button
-def control_leds():
-    turn_off_all_leds()
-    selected_led = led_choice.get()
-    
-    if selected_led == 1:
-        GPIO.output(RED_LED, GPIO.HIGH)
-    elif selected_led == 2:
-        GPIO.output(GREEN_LED, GPIO.HIGH)
-    elif selected_led == 3:
-        GPIO.output(BLUE_LED, GPIO.HIGH)
+# Start PWM with 0% duty cycle (LEDs off)
+red_pwm.start(0)
+yellow_pwm.start(0)
+blue_pwm.start(0)
 
-# Cleanup GPIO on exit
-def exit_program():
-    GPIO.cleanup()
-    window.quit()
+# Function to update LED intensities based on slider value
+def update_intensities(value):
+    red_pwm.ChangeDutyCycle(int(red_slider.get()))
+    yellow_pwm.ChangeDutyCycle(int(yellow_slider.get()))
+    blue_pwm.ChangeDutyCycle(int(blue_slider.get()))
 
 # Tkinter GUI setup
-window = Tk()
-window.title("LED Controller")
+root = tk.Tk()
+root.title("LED Brightness Control")
 
-# IntVar to store selected radio button value
-led_choice = IntVar()
-led_choice.set(0)  # Default to no selection
+# Red LED intensity slider
+red_slider = tk.Scale(root, from_=0, to=100, orient=tk.HORIZONTAL, label="Red LED", command=update_intensities)
+red_slider.pack(pady=10)
 
-# Create radio buttons for each LED
-Radiobutton(window, text="Red LED", variable=led_choice, value=1, command=control_leds).pack()
-Radiobutton(window, text="Green LED", variable=led_choice, value=2, command=control_leds).pack()
-Radiobutton(window, text="Blue LED", variable=led_choice, value=3, command=control_leds).pack()
+# Yellow LED intensity slider
+yellow_slider = tk.Scale(root, from_=0, to=100, orient=tk.HORIZONTAL, label="Yellow LED", command=update_intensities)
+yellow_slider.pack(pady=10)
 
-# Exit button
-Button(window, text="Exit", command=exit_program).pack()
+# Blue LED intensity slider
+blue_slider = tk.Scale(root, from_=0, to=100, orient=tk.HORIZONTAL, label="Blue LED", command=update_intensities)
+blue_slider.pack(pady=10)
 
-# Run the Tkinter event loop
-window.mainloop()
+# Exit button to stop PWM and cleanup GPIO
+tk.Button(root, text="Exit", command=lambda: [GPIO.cleanup(), root.quit()]).pack(pady=20)
+
+# Start the Tkinter event loop
+root.mainloop()
+
+# Cleanup GPIO after exiting the GUI
+GPIO.cleanup()
